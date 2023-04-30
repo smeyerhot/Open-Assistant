@@ -3,9 +3,11 @@ import pydantic
 
 class ModelConfig(pydantic.BaseModel):
     model_id: str
+
     max_input_length: int = 512
     max_total_length: int = 1024
     quantized: bool = False
+
 
     @property
     def is_llama(self) -> bool:
@@ -32,12 +34,12 @@ MODEL_CONFIGS = {
         max_total_length=1024,
     ),
     "OA_SFT_Pythia_12B": ModelConfig(
-        model_id="OpenAssistant/oasst-sft-1-pythia-12b",
+        model_id="/worker/weights/oasst-sft-1-pythia-12b",
         max_input_length=1024,
         max_total_length=2048,
     ),
     "OA_SFT_Pythia_12Bq": ModelConfig(
-        model_id="OpenAssistant/oasst-sft-1-pythia-12b",
+        model_id="/worker/weights/oasst-sft-1-pythia-12b",
         max_input_length=1024,
         max_total_length=2048,
         quantized=True,
@@ -119,7 +121,7 @@ MODEL_CONFIGS = {
         max_total_length=1792,  # seeing OOMs on 2048 on an A100 80GB
     ),
     "OA_SFT_Llama_30Bq_7": ModelConfig(
-        model_id="OpenAssistant/oasst-sft-7-llama-30b",
+        model_id="/weights/oasst-sft-7-llama-30b",
         max_input_length=1024,
         max_total_length=1792,  # seeing OOMs on 2048 on an A100 80GB
         quantized=True,

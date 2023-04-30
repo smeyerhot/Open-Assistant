@@ -48,5 +48,6 @@ while true; do
     $hf_transfer_arg \
     $hf_home_arg \
     -v $OAHF_HOME:/data \
+    -v $MODEL_DIR:/weights \
     $image_name
 done

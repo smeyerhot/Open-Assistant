@@ -10,7 +10,7 @@ ARG SERVICE="worker"
 ARG APP_RELATIVE_PATH="${MODULE}/${SERVICE}"
 
 WORKDIR /worker
-
+VOLUME /worker/weights
 RUN conda create -n worker python=3.10 -y
 
 COPY ./oasst-shared /tmp/oasst-shared
@@ -22,7 +22,8 @@ RUN /opt/miniconda/envs/worker/bin/pip install -r requirements.txt
 COPY ./${APP_RELATIVE_PATH}/*.py .
 COPY ./${APP_RELATIVE_PATH}/worker_full_main.sh /entrypoint.sh
 
-ENV MODEL_CONFIG_NAME="distilgpt2"
+ENV MODEL_CONFIG_NAME="OA_SFT_Pythia_12Bq"
+
 ENV NUM_SHARDS="1"
 
 # These are upper bounds for the inference server.
