@@ -17,7 +17,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { BuiltInProviderType } from "next-auth/providers";
-import { ClientSafeProvider, getProviders, signIn } from "next-auth/react";
+import { ClientSafeProvider, getProviders, signIn, getCsrfToken } from "next-auth/react";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -55,7 +55,56 @@ const errorMessages: Record<SignInErrorTypes, string> = {
   default: "Unable to sign in.",
 };
 
+import { SiweMessage } from 'siwe'
+import { useAccount, useConnect, useNetwork, useSignMessage, useDisconnect } from 'wagmi'
+
+import { InjectedConnector } from 'wagmi/connectors/injected'
+
+
 const REDIRECT_AFTER_LOGIN = "/chat";
+
+function Siwe() {
+  const { address, isConnected } = useAccount()
+  const { connect } = useConnect({
+    connector: new InjectedConnector(),
+  })
+  const { disconnect } = useDisconnect()
+  const { chain } = useNetwork()
+  const { signMessageAsync } = useSignMessage()
+
+  const handleLogin = async () => {
+    try {
+      await connect();
+      const callbackUrl = '/protected';
+      const message = new SiweMessage({
+        domain: window.location.host,
+        address: address,
+        statement: 'Sign in with Ethereum to the app.',
+        uri: window.location.origin,
+        version: '1',
+        chainId: chain?.id,
+        nonce: await getCsrfToken()
+      });
+      const signature = await signMessageAsync({
+          message: message.prepareMessage(),
+        })
+      signIn('credentials', { message: JSON.stringify(message), redirect: false, signature, callbackUrl });
+    } catch (error) {
+      window.alert(error)
+    }
+
+    return (
+
+      <button
+        onClick={(e) => {
+          e.preventDefault()
+          handleLogin()
+        }}
+      >
+        Sign-In with Ethereum
+      </button>
+    )
+  }
 
 interface SigninProps {
   providers: Record<BuiltInProviderType, ClientSafeProvider>;
@@ -90,7 +139,18 @@ function Signin({ providers }: SigninProps) {
       </Head>
       <AuthLayout>
         <Stack spacing="2">
-          {credentials && <EthSigninForm providerId={credentials.id} />}
+          {credentials && (
+          <Button
+              bg={buttonBgColor}
+              _hover={{ bg: "#4A57E3" }}
+              _active={{ bg: "#454FBF" }}
+              size="lg"
+              color="white"
+              onClick={() => handleLogin()}
+            >
+              Continue with Eth
+            </Button>
+          )}
           {credentials && <DebugSigninForm providerId={credentials.id} />}
           {email && enableEmailSignin && (
             <EmailSignInForm providerId={email.id} enableEmailSigninCaptcha={enableEmailSigninCaptcha} />
@@ -220,49 +280,6 @@ const SigninButton = (props: ButtonProps) => {
   );
 };
 
-interface EthSigninFormData {
-  username: string;
-  role: Role;
-}
-
-const EthSigninForm = ({ providerId }: { providerId: string }) => {
-  const { register, handleSubmit } = useForm<EthSigninFormData>({
-    defaultValues: {
-      role: "general",
-      username: "dev",
-    },
-  });
-
-  function signinWithEthCredentials(data: EthSigninFormData) {
-    signIn(providerId, {
-      callbackUrl: REDIRECT_AFTER_LOGIN,
-      ...data,
-    });
-  }
-  const bgColorClass = useColorModeValue("gray.50", "gray.900");
-
-  return (
-    <form
-      onSubmit={handleSubmit(signinWithEthCredentials)}
-      className="border-2 border-orange-600 rounded-md p-4 relative"
-    >
-      <Box bg={bgColorClass} className={`text-orange-600 absolute -top-3 left-5 px-1 z-20`}>
-        For Eth
-      </Box>
-      <Stack>
-        <Input
-          variant="outline"
-          size="lg"
-          placeholder="Username"
-          {...register("username")}
-          errorBorderColor="orange.600"
-        />
-        <RoleSelect {...register("role")}></RoleSelect>
-        <SigninButton > ETH SignIn </SigninButton>
-      </Stack>
-    </form>
-  );
-};
 
 interface DebugSigninFormData {
   username: string;

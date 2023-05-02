@@ -80,6 +80,7 @@ if (process.env.GOOGLE_CLIENT_ID) {
       },
       async authorize(credentials, req) {
         try {
+          alert("HELLO");
           const siwe = new SiweMessage(JSON.parse(credentials?.message || "{}"))
           const nextAuthUrl = new URL(process.env.NEXTAUTH_URL)
           console.log("CSRF",req.headers)
