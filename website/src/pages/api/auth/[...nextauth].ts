@@ -15,6 +15,9 @@ import { createApiClientFromUser } from "src/lib/oasst_client_factory";
 import prisma from "src/lib/prismadb";
 import { convertToBackendUserCore } from "src/lib/users";
 
+// import { getCsrfToken } from "next-auth/react"
+import { SiweMessage } from "siwe"
+import { getCsrfToken } from "next-auth/react";
 const providers: Provider[] = [];
 
 // Register an email magic link auth method.
@@ -59,6 +62,46 @@ if (process.env.GOOGLE_CLIENT_ID) {
   );
 }
 
+
+  providers.push(
+    CredentialsProvider({
+      name: "Ethereum",
+      credentials: {
+        message: {
+          label: "Message",
+          type: "text",
+          placeholder: "0x0",
+        },
+        signature: {
+          label: "Signature",
+          type: "text",
+          placeholder: "0x0",
+        },
+      },
+      async authorize(credentials, req) {
+        try {
+          const siwe = new SiweMessage(JSON.parse(credentials?.message || "{}"))
+          const nextAuthUrl = new URL(process.env.NEXTAUTH_URL)
+          console.log("CSRF",req.headers)
+          const result = await siwe.verify({
+            signature: credentials?.signature || "",
+            domain: nextAuthUrl.host,
+            nonce: await getCsrfToken(req.headers),
+          })
+
+          if (result.success) {
+            return {
+              id: siwe.address,
+            }
+          }
+          return null
+        } catch (e) {
+          return null
+        }
+      },
+    }),
+  );
+  
 if (boolean(process.env.DEBUG_LOGIN) || process.env.NODE_ENV === "development") {
   providers.push(
     CredentialsProvider({
@@ -127,6 +170,7 @@ const authOptions: AuthOptions = {
       session.user.role = token.role;
       session.user.isNew = token.isNew;
       session.user.name = token.name;
+      session.user.address = token.sub;
       session.user.tosAcceptanceDate = token.tosAcceptanceDate;
       session.inference = { isAuthenticated: !!token.inferenceTokens };
       return session;

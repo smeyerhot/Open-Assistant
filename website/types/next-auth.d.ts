@@ -5,6 +5,7 @@ declare module "next-auth" {
     user: {
       /** The user's role. */
       role: string;
+      address: string;
       /** True when the user is new. */
       isNew: boolean;
       /** Iso timestamp of the user's acceptance of the terms of service */

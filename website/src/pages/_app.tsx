@@ -15,7 +15,8 @@ import { get } from "src/lib/api";
 import { BrowserConfig } from "src/types/Config";
 import { SWRConfig, SWRConfiguration } from "swr";
 import useSWRImmutable from "swr/immutable";
-
+import { WagmiConfig } from 'wagmi'
+import { client } from 'src/wagmi'
 import nextI18NextConfig from "../../next-i18next.config.js";
 import { Chakra } from "../styles/Chakra";
 
@@ -47,6 +48,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppPropsWith
       <FlagsProvider value={flags}>
         <Chakra>
           <SWRConfig value={swrConfig}>
+            <WagmiConfig client={client}>
             <SessionProvider session={session}>
               <BrowserConfigContext.Provider value={(data ?? {}) as any}>
                 <Layout>
@@ -54,6 +56,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppPropsWith
                 </Layout>
               </BrowserConfigContext.Provider>
             </SessionProvider>
+            </WagmiConfig>
           </SWRConfig>
         </Chakra>
       </FlagsProvider>

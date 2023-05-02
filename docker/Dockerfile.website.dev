@@ -3,11 +3,13 @@
 
 # Install dependencies only when needed
 FROM node:16.19.1 AS deps
+
+RUN npm install -g nodemon
+
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY ./website/package*.json ./
-
 
 RUN npm ci 
 

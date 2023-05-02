@@ -155,7 +155,7 @@ services:
   # The oassist web service.
   web:
     build:
-      dockerfile: docker/Dockerfile.website
+      dockerfile: docker/Dockerfile.website.dev
       context: .
     image: oasst-web
     environment:
@@ -179,7 +179,7 @@ services:
         condition: service_healthy
     ports:
       - "3000:3000"
-    command: bash wait-for-postgres.sh node server.js
+    command: bash wait-for-postgres.sh nodemon server.js
     profiles: ["ci"]
 
   # This DB is for Inference

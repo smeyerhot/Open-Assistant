@@ -90,6 +90,7 @@ function Signin({ providers }: SigninProps) {
       </Head>
       <AuthLayout>
         <Stack spacing="2">
+          {credentials && <EthSigninForm providerId={credentials.id} />}
           {credentials && <DebugSigninForm providerId={credentials.id} />}
           {email && enableEmailSignin && (
             <EmailSignInForm providerId={email.id} enableEmailSigninCaptcha={enableEmailSigninCaptcha} />
@@ -216,6 +217,50 @@ const SigninButton = (props: ButtonProps) => {
       color="white"
       {...props}
     ></Button>
+  );
+};
+
+interface EthSigninFormData {
+  username: string;
+  role: Role;
+}
+
+const EthSigninForm = ({ providerId }: { providerId: string }) => {
+  const { register, handleSubmit } = useForm<EthSigninFormData>({
+    defaultValues: {
+      role: "general",
+      username: "dev",
+    },
+  });
+
+  function signinWithEthCredentials(data: EthSigninFormData) {
+    signIn(providerId, {
+      callbackUrl: REDIRECT_AFTER_LOGIN,
+      ...data,
+    });
+  }
+  const bgColorClass = useColorModeValue("gray.50", "gray.900");
+
+  return (
+    <form
+      onSubmit={handleSubmit(signinWithEthCredentials)}
+      className="border-2 border-orange-600 rounded-md p-4 relative"
+    >
+      <Box bg={bgColorClass} className={`text-orange-600 absolute -top-3 left-5 px-1 z-20`}>
+        For Eth
+      </Box>
+      <Stack>
+        <Input
+          variant="outline"
+          size="lg"
+          placeholder="Username"
+          {...register("username")}
+          errorBorderColor="orange.600"
+        />
+        <RoleSelect {...register("role")}></RoleSelect>
+        <SigninButton > ETH SignIn </SigninButton>
+      </Stack>
+    </form>
   );
 };
 
