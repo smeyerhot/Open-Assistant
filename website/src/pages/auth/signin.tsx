@@ -17,7 +17,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { BuiltInProviderType } from "next-auth/providers";
-import { ClientSafeProvider, getProviders, signIn, getCsrfToken } from "next-auth/react";
+import { ClientSafeProvider, getProviders, signIn, getCsrfToken, useSession } from "next-auth/react";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -70,8 +70,7 @@ interface SigninProps {
 
 function Signin({ providers }: SigninProps) {
   const router = useRouter();
-  const { ENABLE_EMAIL_SIGNIN: enableEmailSignin, ENABLE_EMAIL_SIGNIN_CAPTCHA: enableEmailSigninCaptcha } =
-    useBrowserConfig();
+  const { ENABLE_EMAIL_SIGNIN: enableEmailSignin, ENABLE_EMAIL_SIGNIN_CAPTCHA: enableEmailSigninCaptcha } = useBrowserConfig();
   const { discord, email, google, credentials } = providers;
   const [error, setError] = useState("");
 
@@ -81,24 +80,13 @@ function Signin({ providers }: SigninProps) {
 
   const { connect, connectors, error:cError, isLoading, pendingConnector } =
     useConnect()
-  const { disconnect } = useDisconnect()
-  
-  useEffect(() => {
-    const err = router?.query?.error;
-    if (err) {
-      if (typeof err === "string") {
-        setError(errorMessages[err as SignInErrorTypes]);
-      } else {
-        setError(errorMessages[err[0] as SignInErrorTypes]);
-      }
-    }
-  }, [router]);
 
-  const handleLogin = async (connector, providerId) => {
+  const { data: session, status } = useSession()
+  const { disconnect } = useDisconnect()
+    const handleLogin = async () => {
 
     console.log('connector',connector);
     try {
-      await connect(connector);
 
       const message = new SiweMessage({
         domain: window.location.host,
@@ -114,12 +102,7 @@ function Signin({ providers }: SigninProps) {
           message: message.prepareMessage(),
         })
 
-      // signIn(providerId, { 
-      //   message: JSON.stringify(message), 
-      //   signature, 
-      //   callbackUrl: REDIRECT_AFTER_LOGIN,
-      // })
-       signIn(providerId, { message: JSON.stringify(message), redirect: false, signature, callbackUrl: REDIRECT_AFTER_LOGIN, });
+       signIn('credentials', { message: JSON.stringify(message), signature, callbackUrl: REDIRECT_AFTER_LOGIN, });
       
     } catch (error) {
       window.alert(error)
@@ -127,9 +110,27 @@ function Signin({ providers }: SigninProps) {
     }
   }
 
+
+  // useEffect(() => {
+  //   console.log(isConnected);
+  //   if (isConnected && !session) {
+  //     handleLogin()
+  //   }
+  // }, [isConnected])
+  useEffect(() => {
+    const err = router?.query?.error;
+    if (err) {
+      if (typeof err === "string") {
+        setError(errorMessages[err as SignInErrorTypes]);
+      } else {
+        setError(errorMessages[err[0] as SignInErrorTypes]);
+      }
+    }
+  }, [router]);
+
   const { colorMode } = useColorMode();
   const buttonBgColor = colorMode === "light" ? "#2563eb" : "#2563eb";
-
+  console.log(connectors);
   return (
     <>
       <Head>
@@ -138,6 +139,7 @@ function Signin({ providers }: SigninProps) {
       </Head>
       <AuthLayout>
         <Stack spacing="2">
+         
           {credentials && (
             connectors.map((connector) => (
               <Button
@@ -148,7 +150,14 @@ function Signin({ providers }: SigninProps) {
                     size="lg"
                     color="white"
                     leftIcon={<Discord />}
-                    onClick={() => handleLogin(connector, credentials.id )}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (!isConnected) {
+                        connect()
+                      } else {
+                        handleLogin()
+                      }
+                    }}
                   >
                   {/* {connector.name}
                 {!connector.ready && ' (unsupported)'}
