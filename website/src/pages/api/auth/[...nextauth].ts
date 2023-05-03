@@ -79,30 +79,52 @@ if (process.env.GOOGLE_CLIENT_ID) {
         },
       },
       async authorize(credentials, req) {
-        try {
-          alert("HELLO");
-          const siwe = new SiweMessage(JSON.parse(credentials?.message || "{}"))
-          const nextAuthUrl = new URL(process.env.NEXTAUTH_URL)
-          console.log("CSRF",req.headers)
-          const result = await siwe.verify({
-            signature: credentials?.signature || "",
-            domain: nextAuthUrl.host,
-            nonce: await getCsrfToken(req.headers),
-          })
+          // const siwe = new SiweMessage(JSON.parse(credentials?.message || "{}"))
+          // console.log(siwe);
+          // const nextAuthUrl = new URL(process.env.NEXTAUTH_URL)
+          // console.log("CSRF",req.headers)
+          // const result = await siwe.verify({
+          //   signature: credentials?.signature || "",
+          //   domain: nextAuthUrl.host,
+          //   nonce: await getCsrfToken(req.headers),
+          // })
 
-          if (result.success) {
-            return {
+
+            const siwe = new SiweMessage(JSON.parse(credentials?.message || "{}")) as SiweMessage
+
+            // const domain = new URL(process.env.NEXTAUTH_URL)
+            const domain = process.env.DOMAIN
+
+            if (siwe.domain !== domain) return null
+
+            const t = await getCsrfToken({req});
+            if (siwe.nonce !== t) return null
+
+            const sig = credentials?.signature || ""
+            console.log(sig);
+            const yes = await siwe.verify({sig})
+            console.log(yes);
+
+            const user = {
               id: siwe.address,
-            }
-          }
-          return null
-        } catch (e) {
-          return null
+              name: "tidofbaby",
+              // role: credentials.role,
+            };
+            // save the user to the database
+            await prisma.user.upsert({
+              where: {
+                id: user.id,
+              },
+              update: user,
+              create: user,
+            });
+
+            return user;
+
         }
-      },
-    }),
-  );
-  
+      })
+      
+  )
 if (boolean(process.env.DEBUG_LOGIN) || process.env.NODE_ENV === "development") {
   providers.push(
     CredentialsProvider({
@@ -287,6 +309,7 @@ export default function auth(req: NextApiRequest, res: NextApiResponse) {
         return token;
       },
       async signIn({ account }) {
+        alert(account);
         const isVerifyEmail = req.url ? req.url.includes("/api/auth/callback/email") : false;
 
         if (account.provider !== "email" || !boolean(process.env.ENABLE_EMAIL_SIGNIN_CAPTCHA) || isVerifyEmail) {

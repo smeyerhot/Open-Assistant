@@ -63,48 +63,6 @@ import { InjectedConnector } from 'wagmi/connectors/injected'
 
 const REDIRECT_AFTER_LOGIN = "/chat";
 
-function Siwe() {
-  const { address, isConnected } = useAccount()
-  const { connect } = useConnect({
-    connector: new InjectedConnector(),
-  })
-  const { disconnect } = useDisconnect()
-  const { chain } = useNetwork()
-  const { signMessageAsync } = useSignMessage()
-
-  const handleLogin = async () => {
-    try {
-      await connect();
-      const callbackUrl = '/protected';
-      const message = new SiweMessage({
-        domain: window.location.host,
-        address: address,
-        statement: 'Sign in with Ethereum to the app.',
-        uri: window.location.origin,
-        version: '1',
-        chainId: chain?.id,
-        nonce: await getCsrfToken()
-      });
-      const signature = await signMessageAsync({
-          message: message.prepareMessage(),
-        })
-      signIn('credentials', { message: JSON.stringify(message), redirect: false, signature, callbackUrl });
-    } catch (error) {
-      window.alert(error)
-    }
-
-    return (
-
-      <button
-        onClick={(e) => {
-          e.preventDefault()
-          handleLogin()
-        }}
-      >
-        Sign-In with Ethereum
-      </button>
-    )
-  }
 
 interface SigninProps {
   providers: Record<BuiltInProviderType, ClientSafeProvider>;
@@ -117,6 +75,14 @@ function Signin({ providers }: SigninProps) {
   const { discord, email, google, credentials } = providers;
   const [error, setError] = useState("");
 
+  const { chain } = useNetwork()
+  const { signMessageAsync } = useSignMessage()
+   const { address, connector, isConnected } = useAccount()
+
+  const { connect, connectors, error:cError, isLoading, pendingConnector } =
+    useConnect()
+  const { disconnect } = useDisconnect()
+  
   useEffect(() => {
     const err = router?.query?.error;
     if (err) {
@@ -127,6 +93,39 @@ function Signin({ providers }: SigninProps) {
       }
     }
   }, [router]);
+
+  const handleLogin = async (connector, providerId) => {
+
+    console.log('connector',connector);
+    try {
+      await connect(connector);
+
+      const message = new SiweMessage({
+        domain: window.location.host,
+        address: address,
+        statement: 'Sign in with Ethereum to the app.',
+        uri: window.location.origin,
+        version: '1',
+        chainId: chain?.id,
+        nonce: await getCsrfToken()
+      });
+
+      const signature = await signMessageAsync({
+          message: message.prepareMessage(),
+        })
+
+      // signIn(providerId, { 
+      //   message: JSON.stringify(message), 
+      //   signature, 
+      //   callbackUrl: REDIRECT_AFTER_LOGIN,
+      // })
+       signIn(providerId, { message: JSON.stringify(message), redirect: false, signature, callbackUrl: REDIRECT_AFTER_LOGIN, });
+      
+    } catch (error) {
+      window.alert(error)
+
+    }
+  }
 
   const { colorMode } = useColorMode();
   const buttonBgColor = colorMode === "light" ? "#2563eb" : "#2563eb";
@@ -140,16 +139,27 @@ function Signin({ providers }: SigninProps) {
       <AuthLayout>
         <Stack spacing="2">
           {credentials && (
-          <Button
-              bg={buttonBgColor}
-              _hover={{ bg: "#4A57E3" }}
-              _active={{ bg: "#454FBF" }}
-              size="lg"
-              color="white"
-              onClick={() => handleLogin()}
-            >
-              Continue with Eth
-            </Button>
+            connectors.map((connector) => (
+              <Button
+                    key={connector.id}
+                    bg="#2563eb"
+                    _hover={{ bg: "#4A57E3" }}
+                    _active={{ bg: "#454FBF" }}
+                    size="lg"
+                    color="white"
+                    leftIcon={<Discord />}
+                    onClick={() => handleLogin(connector, credentials.id )}
+                  >
+                  {/* {connector.name}
+                {!connector.ready && ' (unsupported)'}
+                {isLoading &&
+                  connector.id === pendingConnector?.id &&
+                  ' (connecting)'} */}
+                 {connector.name}
+              </Button>
+
+            ))
+            
           )}
           {credentials && <DebugSigninForm providerId={credentials.id} />}
           {email && enableEmailSignin && (
