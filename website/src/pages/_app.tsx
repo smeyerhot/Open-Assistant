@@ -19,6 +19,44 @@ import useSWRImmutable from "swr/immutable";
 import nextI18NextConfig from "../../next-i18next.config.js";
 import { Chakra } from "../styles/Chakra";
 
+import { WagmiConfig, createClient, configureChains, mainnet } from 'wagmi'
+ 
+import { infuraProvider } from 'wagmi/providers/infura'
+import { publicProvider } from 'wagmi/providers/public'
+ 
+import { CoinbaseWalletConnector } from 'wagmi/connectors/coinbaseWallet'
+import { InjectedConnector } from 'wagmi/connectors/injected'
+import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
+import { WalletConnectConnector } from 'wagmi/connectors/walletConnect'
+
+const { chains, provider, webSocketProvider } = configureChains(
+  [mainnet],
+  [infuraProvider({ apiKey: process.env.INFURA }), publicProvider()],
+)
+ 
+// Set up client
+const client = createClient({
+  autoConnect: true,
+  connectors: [
+    new MetaMaskConnector({ chains }),
+    new CoinbaseWalletConnector({
+      chains,
+      options: {
+        appName: 'wagmi',
+      },
+    }),
+    new InjectedConnector({
+      chains,
+      options: {
+        name: 'Injected',
+        shimDisconnect: true,
+      },
+    }),
+  ],
+  provider,
+  webSocketProvider,
+})
+ 
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
 };
@@ -47,6 +85,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppPropsWith
       <FlagsProvider value={flags}>
         <Chakra>
           <SWRConfig value={swrConfig}>
+            <WagmiConfig client={client}>
             <SessionProvider session={session}>
               <BrowserConfigContext.Provider value={(data ?? {}) as any}>
                 <Layout>
@@ -54,6 +93,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppPropsWith
                 </Layout>
               </BrowserConfigContext.Provider>
             </SessionProvider>
+            </WagmiConfig>
           </SWRConfig>
         </Chakra>
       </FlagsProvider>

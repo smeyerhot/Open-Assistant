@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { CallToAction } from "src/components/CallToAction";
 import { Faq } from "src/components/Faq";
 import { Hero } from "src/components/Hero";
+
 export { getDefaultServerSideProps as getStaticProps } from "src/lib/defaultServerSideProps";
 
 const Home = () => {
@@ -25,6 +26,7 @@ const Home = () => {
         <title>{t("title")}</title>
       </Head>
       <Box as="main" className="oa-basic-theme">
+        
         <Hero />
         <CallToAction />
         <Faq />

@@ -14,7 +14,8 @@ import { discordAvatarRefresh } from "src/lib/discord_avatar_refresh";
 import { createApiClientFromUser } from "src/lib/oasst_client_factory";
 import prisma from "src/lib/prismadb";
 import { convertToBackendUserCore } from "src/lib/users";
-
+import { getCsrfToken } from "next-auth/react"
+import { SiweMessage } from "siwe"
 const providers: Provider[] = [];
 
 // Register an email magic link auth method.
@@ -58,10 +59,50 @@ if (process.env.GOOGLE_CLIENT_ID) {
     })
   );
 }
+providers.push(
+  CredentialsProvider({
+    id: "eth",
+    name: "Ethereum",
+    credentials: {
+      message: {
+        label: "Message",
+        type: "text",
+        placeholder: "0x0",
+      },
+      signature: {
+        label: "Signature",
+        type: "text",
+        placeholder: "0x0",
+      },
+    },
+    async authorize(credentials) {
+      try {
+        const siwe = new SiweMessage(JSON.parse(credentials?.message || "{}"))
+        const nextAuthUrl = new URL(process.env.NEXTAUTH_URL)
+
+        const result = await siwe.verify({
+          signature: credentials?.signature || "",
+          domain: nextAuthUrl.host,
+          nonce: await getCsrfToken({ req }),
+        })
+
+        if (result.success) {
+          return {
+            id: siwe.address,
+          }
+        }
+        return null
+      } catch (e) {
+        return null
+      }
+    },
+  })
+)
 
 if (boolean(process.env.DEBUG_LOGIN) || process.env.NODE_ENV === "development") {
   providers.push(
     CredentialsProvider({
+      id: "credentials",
       name: "Debug Credentials",
       credentials: {
         username: { label: "Username", type: "text" },
