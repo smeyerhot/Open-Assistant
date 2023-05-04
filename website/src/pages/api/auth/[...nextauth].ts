@@ -80,7 +80,7 @@ if (process.env.GOOGLE_CLIENT_ID) {
       },
       async authorize(credentials, req) {
         const siwe = new SiweMessage(JSON.parse(credentials?.message || "{}"))
-
+        console.log(siwe)
         // const nextAuthUrl = new URL(process.env.NEXTAUTH_URL)
         // const domain = process.env.DOMAIN
 
@@ -97,19 +97,24 @@ if (process.env.GOOGLE_CLIENT_ID) {
         const result = await siwe.verify({
           signature: credentials?.signature || "",
           domain: nextAuthUrl.host,
-          nonce: await getCsrfToken({ req }),
+          nonce: await getCsrfToken({req}),
         })
         
-        console.log(result);
         if (!result.success) return null
-
+        console.log("HELLO2")
         const user = {
-          id:"tidofbaby",
+          id: "dev",
           address: siwe.address,
-          name: "tidofbaby",
-          // role: credentials.role,
+          name: "dev",
+          role: "general",
         };
+
         // save the user to the database
+          // await prisma.user.create({
+          //   data: {
+             
+          //   },
+          // });
         await prisma.user.upsert({
           where: {
             id: user.id,
@@ -119,6 +124,7 @@ if (process.env.GOOGLE_CLIENT_ID) {
         });
 
         return user;
+        
     }
   })
   
@@ -138,6 +144,7 @@ if (boolean(process.env.DEBUG_LOGIN) || process.env.NODE_ENV === "development") 
           name: credentials.username,
           role: credentials.role,
         };
+
         // save the user to the database
         await prisma.user.upsert({
           where: {
@@ -203,6 +210,7 @@ const authOptions: AuthOptions = {
      * Update the user's role after they have successfully signed in
      */
     async signIn({ user, account, isNewUser }) {
+      console.log(account);
       if (isNewUser && account.provider === "email" && !user.name) {
         // only generate a username if the user is new and they signed up with email and they don't have a name
         // although the name already assigned in the jwt callback, this is to ensure notthing breaks, and we should never reach here.

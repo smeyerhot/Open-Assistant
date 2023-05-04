@@ -76,18 +76,20 @@ function Signin({ providers }: SigninProps) {
 
   const { chain } = useNetwork()
   const { signMessageAsync } = useSignMessage()
-   const { address, connector, isConnected } = useAccount()
-
-  const { connect, connectors, error:cError, isLoading, pendingConnector } =
-    useConnect()
+  const { address, isConnected } = useAccount()
+  const { connect } = useConnect({
+      connector: new InjectedConnector(),
+    });
+  // const { connect, connectors, isLoading, pendingConnector } =
+  //   useConnect()
 
   const { data: session, status } = useSession()
   const { disconnect } = useDisconnect()
-    const handleLogin = async () => {
-
-    console.log('connector',connector);
+    const handleLogin = async ()=> {
+    
     try {
-
+      await connect();
+      console.log("Hello")
       const message = new SiweMessage({
         domain: window.location.host,
         address: address,
@@ -98,12 +100,13 @@ function Signin({ providers }: SigninProps) {
         nonce: await getCsrfToken()
       });
 
+      console.log(message)
       const signature = await signMessageAsync({
           message: message.prepareMessage(),
         })
 
        signIn('credentials', { message: JSON.stringify(message), signature, callbackUrl: REDIRECT_AFTER_LOGIN, });
-      
+      console.log(message)
     } catch (error) {
       window.alert(error)
 
@@ -117,6 +120,7 @@ function Signin({ providers }: SigninProps) {
   //     handleLogin()
   //   }
   // }, [isConnected])
+
   useEffect(() => {
     const err = router?.query?.error;
     if (err) {
@@ -130,7 +134,6 @@ function Signin({ providers }: SigninProps) {
 
   const { colorMode } = useColorMode();
   const buttonBgColor = colorMode === "light" ? "#2563eb" : "#2563eb";
-  console.log(connectors);
   return (
     <>
       <Head>
@@ -141,33 +144,35 @@ function Signin({ providers }: SigninProps) {
         <Stack spacing="2">
          
           {credentials && (
-            connectors.map((connector) => (
+            // connectors.map((connector) => (
               <Button
-                    key={connector.id}
+                    // key={connector.id}
                     bg="#2563eb"
                     _hover={{ bg: "#4A57E3" }}
                     _active={{ bg: "#454FBF" }}
                     size="lg"
                     color="white"
                     leftIcon={<Discord />}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      if (!isConnected) {
-                        connect()
-                      } else {
-                        handleLogin()
-                      }
-                    }}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (!isConnected) {
+                          connect()
+                        } else {
+                          handleLogin()
+                        }
+                      }}
                   >
+                    ETH
                   {/* {connector.name}
                 {!connector.ready && ' (unsupported)'}
                 {isLoading &&
                   connector.id === pendingConnector?.id &&
                   ' (connecting)'} */}
-                 {connector.name}
+                 {/* {connector.name} */}
               </Button>
 
-            ))
+            // )
+  // )
             
           )}
           {credentials && <DebugSigninForm providerId={credentials.id} />}
