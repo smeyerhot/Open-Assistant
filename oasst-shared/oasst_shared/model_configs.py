@@ -32,12 +32,12 @@ MODEL_CONFIGS = {
         max_total_length=1024,
     ),
     "OA_SFT_Pythia_12B": ModelConfig(
-        model_id="OpenAssistant/oasst-sft-1-pythia-12b",
+        model_id="/worker/weights/oasst-sft-1-pythia-12b",
         max_input_length=1024,
         max_total_length=2048,
     ),
     "OA_SFT_Pythia_12Bq": ModelConfig(
-        model_id="OpenAssistant/oasst-sft-1-pythia-12b",
+        model_id="/worker/weights/oasst-sft-1-pythia-12b",
         max_input_length=1024,
         max_total_length=2048,
         quantized=True,

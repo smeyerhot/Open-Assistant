@@ -102,7 +102,7 @@ providers.push(
 if (boolean(process.env.DEBUG_LOGIN) || process.env.NODE_ENV === "development") {
   providers.push(
     CredentialsProvider({
-      id: "credentials",
+      // id: "credentials",
       name: "Debug Credentials",
       credentials: {
         username: { label: "Username", type: "text" },

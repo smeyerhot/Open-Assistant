@@ -65,7 +65,7 @@ function Signin({ providers }: SigninProps) {
   const router = useRouter();
   const { ENABLE_EMAIL_SIGNIN: enableEmailSignin, ENABLE_EMAIL_SIGNIN_CAPTCHA: enableEmailSigninCaptcha } =
     useBrowserConfig();
-  const { discord, email, google, credentials, eth } = providers;
+  const { discord, email, google, credentials } = providers;
   const [error, setError] = useState("");
 
   useEffect(() => {
