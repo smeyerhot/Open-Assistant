@@ -75,10 +75,13 @@ providers.push(
         placeholder: "0x0",
       },
     },
-    async authorize(credentials) {
+    async authorize(credentials, req) {
       try {
         const siwe = new SiweMessage(JSON.parse(credentials?.message || "{}"))
+
+        console.log(siwe);
         const nextAuthUrl = new URL(process.env.NEXTAUTH_URL)
+
 
         const result = await siwe.verify({
           signature: credentials?.signature || "",
@@ -86,13 +89,26 @@ providers.push(
           nonce: await getCsrfToken({ req }),
         })
 
+        console.log(result);
         if (result.success) {
-          return {
-            id: siwe.address,
-          }
+          const user = {
+            id: 'dev',
+            name: 'dev',
+            role: 'general',
+          };
+          // save the user to the database
+          await prisma.user.upsert({
+            where: {
+              id: user.id,
+            },
+            update: user,
+            create: user,
+          });
+          return user;
         }
         return null
       } catch (e) {
+        console.log(e)
         return null
       }
     },
@@ -102,7 +118,7 @@ providers.push(
 if (boolean(process.env.DEBUG_LOGIN) || process.env.NODE_ENV === "development") {
   providers.push(
     CredentialsProvider({
-      // id: "credentials",
+      id: "credentials",
       name: "Debug Credentials",
       credentials: {
         username: { label: "Username", type: "text" },

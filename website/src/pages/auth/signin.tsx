@@ -17,7 +17,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { BuiltInProviderType } from "next-auth/providers";
-import { ClientSafeProvider, getProviders, signIn } from "next-auth/react";
+import { ClientSafeProvider, getProviders, signIn, useSession, getCsrfToken } from "next-auth/react";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -25,6 +25,11 @@ import { AuthLayout } from "src/components/AuthLayout";
 import { CloudFlareCaptcha } from "src/components/CloudflareCaptcha";
 import { Role, RoleSelect } from "src/components/RoleSelect";
 import { useBrowserConfig } from "src/hooks/env/BrowserEnv";
+
+import { SiweMessage } from 'siwe'
+import { useAccount, useConnect, useNetwork, useSignMessage, useDisconnect } from 'wagmi'
+
+import { InjectedConnector } from 'wagmi/connectors/injected'
 
 export type SignInErrorTypes =
   | "Signin"
@@ -68,6 +73,42 @@ function Signin({ providers }: SigninProps) {
   const { discord, email, google, credentials } = providers;
   const [error, setError] = useState("");
 
+  const { chain } = useNetwork()
+  const { signMessageAsync } = useSignMessage()
+  const { address, isConnected } = useAccount()
+  // const { connect, connectors, error: wagmiErr, isLoading, pendingConnector } =
+  //   useConnect()
+  const { connect } = useConnect({
+      connector: new InjectedConnector(),
+    });
+
+  const handleLogin = async ()=> {
+
+    try {
+      await connect();
+      const message = new SiweMessage({
+        domain: window.location.host,
+        address: address,
+        statement: 'Sign in with Ethereum to the app.',
+        uri: window.location.origin,
+        version: '1',
+        chainId: chain?.id,
+        nonce: await getCsrfToken()
+      });
+
+      console.log(message)
+      const signature = await signMessageAsync({
+          message: message.prepareMessage(),
+        })
+
+       signIn('eth', { message: JSON.stringify(message), signature, callbackUrl: REDIRECT_AFTER_LOGIN, });
+      console.log(message)
+    } catch (error) {
+      window.alert(error)
+
+    }
+  }
+
   useEffect(() => {
     const err = router?.query?.error;
     if (err) {
@@ -90,6 +131,36 @@ function Signin({ providers }: SigninProps) {
       </Head>
       <AuthLayout>
         <Stack spacing="2">
+          {credentials && (
+            // connectors.map((connector) => (
+              <Button
+                    // key={connector.id}
+                    bg="#2563eb"
+                    _hover={{ bg: "#4A57E3" }}
+                    _active={{ bg: "#454FBF" }}
+                    size="lg"
+                    color="white"
+                    leftIcon={<Discord />}
+                      onClick={() => {
+
+                        if (!isConnected) {
+                          connect()
+                        } else {
+                          handleLogin()
+                        }
+                      }}
+                  >
+                   {/* {connector.name}
+                    */}
+                    Eth
+
+              </Button>
+              
+            )
+          //   )
+          // )
+          }
+            
           {credentials && <DebugSigninForm providerId={credentials.id} />}
           {email && enableEmailSignin && (
             <EmailSignInForm providerId={email.id} enableEmailSigninCaptcha={enableEmailSigninCaptcha} />
